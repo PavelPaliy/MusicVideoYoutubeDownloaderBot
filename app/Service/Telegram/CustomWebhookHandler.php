@@ -76,10 +76,17 @@ class CustomWebhookHandler extends WebhookHandler
             $text = trim($request->input('message')['text']);
             if (preg_match('/^((?:https?:)?\/\/)?((?:www|m)\.)?((?:youtube\.com|youtu.be))(\/(?:[\w\-]+\?v=|embed\/|v\/)?)([\w\-]+)(\S+)?$/', $text) === 1) {
                 $youtube = new \App\Service\YouTube();
+
                 $id = $youtube->extractVideoId($text);
-                $buttons = [];
-                $formats = $this->getFormatsByVideoId($id);
-                $this->sendAudio($formats['Audio']);
+                $duration = (int)$youtube->extractVideoInfo($id)['duration'];
+                if($duration<600){
+                    $buttons = [];
+                    $formats = $this->getFormatsByVideoId($id);
+                    $this->sendAudio($formats['Audio']);
+                }else{
+                    Telegraph::message("Send audio with duration less than 10 minute")->send();
+                }
+
                 /*$videoTitle = $this->videoInfo['title'];
                 foreach ($formats as $format => $url){
                     $buttons[] = Button::make($format)->action('download')->param('format_id', $format."_".$id);
